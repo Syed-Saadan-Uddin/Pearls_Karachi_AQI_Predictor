@@ -33,6 +33,12 @@ jobs:
           # Install ipykernel to register the Python kernel
           python -m ipykernel install --user --name python3 --display-name "Python 3"
           
+          # --- FIX: Force CPU-only TensorFlow to prevent CUDA errors ---
+          # First, uninstall any existing GPU-aware TensorFlow package to be safe
+          pip uninstall -y tensorflow tensorflow-gpu
+          # Now, install the CPU-specific version of TensorFlow
+          pip install tensorflow-cpu
+
       - name: Verify Hopsworks is installed (REQUIRED)
         run: |
           python -c "import hopsworks; print(f' Hopsworks installed')"
