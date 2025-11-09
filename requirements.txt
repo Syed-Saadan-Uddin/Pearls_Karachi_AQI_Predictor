@@ -29,3 +29,5 @@ lightgbm>=4.0.0
 
 # HTTP requests for API calls
 requests>=2.31.0
+tensorflow
+pytorch
