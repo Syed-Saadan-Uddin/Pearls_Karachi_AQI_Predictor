@@ -3,6 +3,8 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic
 python-multipart==0.0.6
+matplotlib
+seaborn
 
 # Data processing
 pandas
@@ -12,13 +14,18 @@ pyarrow  # Required for Parquet file support
 # Machine Learning
 scikit-learn==1.5.2
 joblib==1.4.2
-xgboost>=2.0.0
-lightgbm>=4.0.0
 
 # Feature Store (REQUIRED)
 xlrd==2.0.1
 hopsworks>=3.0.0
+confluent-kafka  # Required for Hopsworks data insertion
+python-dotenv>=1.0.0  # For loading .env files
 
 
 # Date handling
 python-dateutil==2.9.0.post0
+xgboost>=2.0.0
+lightgbm>=4.0.0
+
+# HTTP requests for API calls
+requests>=2.31.0
