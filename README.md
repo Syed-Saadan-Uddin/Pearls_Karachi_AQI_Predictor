@@ -15,7 +15,7 @@ This project is a full-stack application designed to predict and visualize the A
 - **Frontend**: React, Vite, Tailwind CSS
 - **Backend**: Python, FastAPI
 - **Machine Learning**:
-  - **Model**: LightGBM
+  - **Model**: LightGBM, XGBoost, LSTM, GRU
   - **Libraries**: Scikit-learn, Pandas, NumPy
   - **Notebooks**: Jupyter for Exploratory Data Analysis (EDA) and model experimentation.
 - **MLOps & Data Pipeline**:
