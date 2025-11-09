@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+
+# React / Vite
+frontend/dist/
+frontend/.vite/
+frontend/build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+
+# Data files (optional - uncomment if you don't want to track data)
+# *.csv
+# *.pkl
+# *.json
+
+# Feast
+feature_store/data/
+feature_store/.feast/
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Model files (optional)
+# *.pkl
+# *.h5
+# *.pb

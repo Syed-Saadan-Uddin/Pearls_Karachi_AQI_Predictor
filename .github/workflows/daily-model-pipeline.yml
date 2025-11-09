@@ -1,0 +1,174 @@
+name: Daily Model Train Pipeline
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  run-model-pipeline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to commit and push files
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Fetch all history for git operations
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install backend dependencies (includes Hopsworks)
+          pip install -r requirements-backend.txt
+          # Install additional dependencies for notebook execution
+          pip install jupyter papermill requests ipykernel
+          # Install ipykernel to register the Python kernel
+          python -m ipykernel install --user --name python3 --display-name "Python 3"
+          
+      - name: Verify Hopsworks is installed (REQUIRED)
+        run: |
+          python -c "import hopsworks; print(f' Hopsworks installed')"
+          if [ $? -ne 0 ]; then
+            echo " Hopsworks is not installed - this is REQUIRED!"
+            exit 1
+          fi
+      
+      - name: Check for required secrets
+        run: |
+          if [ -z "${{ secrets.HOPSWORKS_API_KEY }}" ]; then
+            echo " HOPSWORKS_API_KEY secret is not set!"
+            echo "   Please add HOPSWORKS_API_KEY to GitHub repository secrets"
+            exit 1
+          fi
+          echo " Hopsworks secrets are configured"
+      
+      - name: Prepare data for Hopsworks (REQUIRED)
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: ${{ secrets.HOPSWORKS_PROJECT_NAME }}
+        run: |
+          # Check if data file exists
+          if [ ! -f "cleaned_aqi_weather_dataset.csv" ]; then
+            echo "️ cleaned_aqi_weather_dataset.csv not found"
+            echo "   Skipping Hopsworks setup - data file must exist first"
+            exit 0
+          fi
+          python setup_hopsworks.py
+          if [ $? -ne 0 ]; then
+            echo " Hopsworks data preparation FAILED - this is required!"
+            exit 1
+          fi
+      
+      - name: Update Hopsworks feature store (REQUIRED)
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: ${{ secrets.HOPSWORKS_PROJECT_NAME }}
+        run: |
+          # Check if data file exists
+          if [ ! -f "cleaned_aqi_weather_dataset.csv" ]; then
+            echo "️ cleaned_aqi_weather_dataset.csv not found"
+            echo "   Skipping Hopsworks update - data file must exist first"
+            exit 0
+          fi
+          python scripts/update_hopsworks.py
+          if [ $? -ne 0 ]; then
+            echo " Hopsworks update FAILED - this is required!"
+            exit 1
+          fi
+      
+      - name: Verify Hopsworks feature store is ready
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: ${{ secrets.HOPSWORKS_PROJECT_NAME }}
+        run: |
+          python -c "
+          import hopsworks
+          import os
+          api_key = os.getenv('HOPSWORKS_API_KEY')
+          project_name = os.getenv('HOPSWORKS_PROJECT_NAME', 'aqi_prediction')
+          if not api_key:
+              raise ValueError('HOPSWORKS_API_KEY not set')
+          project = hopsworks.login(api_key_value=api_key, project=project_name)
+          fs = project.get_feature_store()
+          print(' Hopsworks feature store initialized successfully')
+          print(f'   Project: {project_name}')
+          print(f'   Feature store: {fs.name}')
+          "
+          if [ $? -ne 0 ]; then
+            echo " Hopsworks feature store verification FAILED!"
+            exit 1
+          fi
+      
+      - name: Create scaler if missing
+        run: |
+          python scripts/create_scaler.py || echo "Scaler already exists or could not be created"
+        continue-on-error: true
+          
+      - name: Train Model (requires Hopsworks)
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: ${{ secrets.HOPSWORKS_PROJECT_NAME }}
+        run: |
+          # Model training now REQUIRES Hopsworks - it loads data from Hopsworks feature store
+          # Use improved_model_train.py instead of notebook
+          echo " Training model with improved_model_train.py..."
+          python improved_model_train.py
+          if [ $? -ne 0 ]; then
+            echo " Model training FAILED - check Hopsworks setup!"
+            exit 1
+          fi
+          echo " Model training completed successfully"
+          
+      - name: Verify model files were created
+        run: |
+          if [ ! -f "best_model.pkl" ]; then
+            echo " best_model.pkl was not created!"
+            exit 1
+          fi
+          if [ ! -f "scaler.pkl" ]; then
+            echo " scaler.pkl was not created!"
+            exit 1
+          fi
+          if [ ! -f "best_model_metadata.json" ]; then
+            echo " best_model_metadata.json was not created!"
+            exit 1
+          fi
+          echo " All model files created successfully"
+          
+      - name: Predict and Evaluate (optional)
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: ${{ secrets.HOPSWORKS_PROJECT_NAME }}
+        run: |
+          # Optional: Run prediction notebook if it exists
+          if [ -f "prediction.ipynb" ]; then
+            papermill prediction.ipynb /tmp/prediction_output.ipynb || echo "Prediction notebook failed (non-critical)"
+          else
+            echo "️ prediction.ipynb not found - skipping prediction step"
+          fi
+        continue-on-error: true
+          
+      - name: Commit and push model files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # Add generated model and prediction files
+          git add best_model.pkl best_model_metadata.json scaler.pkl feature_names.json 2>/dev/null || true
+          git add prediction_results.csv prediction_results.pkl 2>/dev/null || true
+          # Add sequence_info.json if it exists (for LSTM/GRU models)
+          git add sequence_info.json best_model_keras/ 2>/dev/null || true
+          # Only commit if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Update model and predictions from daily pipeline [skip ci]"
+            git push
+          else
+            echo "No changes to commit"
+          fi

@@ -1,0 +1,13 @@
+{
+  "model_type": "XGBoost",
+  "sklearn_version": "1.5.2",
+  "numpy_version": "1.26.4",
+  "target_column": "Calculated_AQI",
+  "feature_count": 143,
+  "training_samples": 41072,
+  "test_samples": 10268,
+  "best_rmse": 82.38188945967815,
+  "best_mae": 35.945753798208024,
+  "best_r2": -0.1559817319168031,
+  "created_at": "2025-11-09T03:19:42.690190"
+}

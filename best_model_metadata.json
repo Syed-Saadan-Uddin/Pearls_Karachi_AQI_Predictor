@@ -1,0 +1,55 @@
+{
+  "model_type": "XGBoost",
+  "sklearn_version": "1.5.2",
+  "numpy_version": "1.26.4",
+  "target_column": "aqi_index",
+  "feature_count": 18,
+  "training_samples": 2886,
+  "validation_samples": 619,
+  "test_samples": 619,
+  "dataset_expanded": true,
+  "augmentation_factor": 0,
+  "train_val_test_split": "70/15/15",
+  "best_rmse": 0.4081809848436329,
+  "best_mae": 0.28235596781593536,
+  "best_r2": 0.7599297481233349,
+  "all_models": [
+    {
+      "Model": "LinearRegression",
+      "RMSE": 0.809247625614011,
+      "MAE": 0.6750501084208991,
+      "R\u00b2": 0.056383171765625795
+    },
+    {
+      "Model": "Ridge",
+      "RMSE": 0.8093136095784986,
+      "MAE": 0.6762360691841647,
+      "R\u00b2": 0.056229285326619416
+    },
+    {
+      "Model": "XGBoost",
+      "RMSE": 0.4081809848436329,
+      "MAE": 0.28235596781593536,
+      "R\u00b2": 0.7599297481233349
+    },
+    {
+      "Model": "LightGBM",
+      "RMSE": 0.4191340079033896,
+      "MAE": 0.32476299255095775,
+      "R\u00b2": 0.7468729194202927
+    },
+    {
+      "Model": "GradientBoosting",
+      "RMSE": 0.4141902246263738,
+      "MAE": 0.27302216245555533,
+      "R\u00b2": 0.7528090882597498
+    },
+    {
+      "Model": "Ensemble",
+      "RMSE": 0.4426714030070067,
+      "MAE": 0.30236087256748756,
+      "R\u00b2": 0.7176448302391388
+    }
+  ],
+  "created_at": "2025-11-09T17:55:24.159619"
+}

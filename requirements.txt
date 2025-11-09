@@ -1,0 +1,24 @@
+# Core dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic
+python-multipart==0.0.6
+
+# Data processing
+pandas
+numpy
+pyarrow  # Required for Parquet file support
+
+# Machine Learning
+scikit-learn==1.5.2
+joblib==1.4.2
+xgboost>=2.0.0
+lightgbm>=4.0.0
+
+# Feature Store (REQUIRED)
+xlrd==2.0.1
+hopsworks>=3.0.0
+
+
+# Date handling
+python-dateutil==2.9.0.post0
