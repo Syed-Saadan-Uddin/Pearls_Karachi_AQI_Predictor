@@ -1,92 +1,58 @@
-name: Hourly Data Pipeline
+name: Hourly Data Pipeline with Hopsworks
 
 on:
   schedule:
     - cron: '0 * * * *'  # Run every hour
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:      # Allow manual triggering
 
 jobs:
   run-data-pipeline:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # Required to commit and push files
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # Fetch all history for git operations
         
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-          
+          python-version: '3.9' # Or your preferred version (e.g., 3.10)
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install backend dependencies (includes Feast)
-          pip install -r requirements-backend.txt
-          # Install additional dependencies for notebook execution
-          pip install jupyter papermill requests ipykernel
-          # Install ipykernel to register the Python kernel
+          # Ensure your requirements.txt includes hopsworks, pandas, dotenv, etc.
+          pip install -r requirements.txt
+          # Install dependencies for running notebooks
+          pip install jupyter papermill ipykernel
           python -m ipykernel install --user --name python3 --display-name "Python 3"
         
       - name: Run feature extraction from API
-        run: |
-          papermill feature_extract_from_api_hourly.ipynb /tmp/feature_extract_output.ipynb
+        run: papermill feature_extract_from_api_hourly.ipynb /tmp/feature_extract_output.ipynb
           
       - name: Run data extraction
-        run: |
-          papermill extract_data.ipynb /tmp/extract_data_output.ipynb
+        run: papermill extract_data.ipynb /tmp/extract_data_output.ipynb
           
-      - name: Run EDA and cleaning (optional)
+      - name: Run EDA and cleaning
         run: |
-          papermill EDA.ipynb /tmp/eda_output.ipynb || echo "EDA notebook completed with warnings"
+          # This step MUST produce the 'cleaned_aqi_weather_dataset.csv' file
+          # that your setup_hopsworks.py script expects by default.
+          papermill EDA.ipynb /tmp/eda_output.ipynb || echo "EDA notebook completed with potential warnings"
         continue-on-error: true
       
-      - name: Prepare data for Feast (REQUIRED)
+      - name: Ingest data to Hopsworks (REQUIRED)
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: ${{ secrets.HOPSWORKS_PROJECT_NAME }}
         run: |
-          python setup_feast.py
-          if [ $? -ne 0 ]; then
-            echo " Feast data preparation FAILED - this is required!"
-            exit 1
-          fi
-      
-      - name: Apply Feast feature definitions (REQUIRED)
-        run: |
-          cd feature_store
-          feast apply
-          if [ $? -ne 0 ]; then
-            echo " Feast apply FAILED - this is required!"
-            exit 1
-          fi
-      
-      - name: Materialize features to Feast online store (REQUIRED)
-        run: |
-          cd feature_store
-          # Get current timestamp in ISO format
-          CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S")
-          feast materialize-incremental $CURRENT_TIME
-          if [ $? -ne 0 ]; then
-            echo " Feast materialization FAILED - this is required!"
-            exit 1
-          fi
-          echo " Features materialized up to: $CURRENT_TIME"
+          echo "Starting data ingestion into Hopsworks..."
+          # Your script handles finding the feature group and inserting data when --insert is used
+          python setup_hopsworks.py --insert
           
-      - name: Commit and push generated files
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          # Add generated data files
-          git add historical_aqi_weather_data.json aqi_weather_data.csv cleaned_aqi_weather_dataset.csv 2>/dev/null || true
-          # Add Feast data files
-          git add feature_store/data/cleaned_aqi_weather_dataset.parquet feature_store/data/online_store.db feature_store/data/registry.db 2>/dev/null || true
-          # Only commit if there are changes
-          if ! git diff --staged --quiet; then
-            git commit -m "Update data files from hourly pipeline [skip ci]"
-            git push
-          else
-            echo "No changes to commit"
+          # Error handling to fail the workflow if ingestion fails
+          if [ $? -ne 0 ]; then
+            echo "Hopsworks data ingestion FAILED!"
+            exit 1
           fi
+          echo "Data successfully ingested into Hopsworks."
+
