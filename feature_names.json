@@ -16,6 +16,7 @@
     "apparent_temperature",
     "shortwave_radiation",
     "year",
+    "month",
     "day",
     "hour"
   ],
