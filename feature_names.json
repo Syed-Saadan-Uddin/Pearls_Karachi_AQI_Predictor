@@ -2,7 +2,6 @@
   "feature_columns": [
     "co",
     "no",
-    "no2",
     "o3",
     "so2",
     "pm2_5",
