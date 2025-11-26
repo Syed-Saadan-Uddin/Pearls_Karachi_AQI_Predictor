@@ -2,9 +2,11 @@
   "feature_columns": [
     "co",
     "no",
+    "no2",
     "o3",
     "so2",
     "pm2_5",
+    "nh3",
     "temperature_2m",
     "relative_humidity_2m",
     "wind_speed_10m",
@@ -14,9 +16,8 @@
     "apparent_temperature",
     "shortwave_radiation",
     "year",
-    "month",
     "day",
     "hour"
   ],
-  "target_column": "aqi_index"
+  "target_column": "Calculated_AQI"
 }
