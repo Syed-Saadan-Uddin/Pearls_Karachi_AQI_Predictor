@@ -1,7 +1,7 @@
 {
   "model_type": "LinearRegression",
   "sklearn_version": "1.5.2",
-  "numpy_version": "1.26.4",
+  "numpy_version": "2.1.3",
   "target_column": "Calculated_AQI",
   "feature_count": 18,
   "training_samples": 3040,
@@ -22,9 +22,9 @@
     },
     {
       "Model": "Ridge",
-      "RMSE": 86.30799950524457,
-      "MAE": 74.7519257072359,
-      "R\u00b2": -0.590882769191942
+      "RMSE": 86.30799950524455,
+      "MAE": 74.75192570723586,
+      "R\u00b2": -0.5908827691919414
     },
     {
       "Model": "XGBoost",
@@ -58,11 +58,11 @@
     },
     {
       "Model": "Ensemble",
-      "RMSE": 99.94426895318094,
-      "MAE": 91.6925944317745,
-      "R\u00b2": -1.1332996816677823
+      "RMSE": 99.94426903042023,
+      "MAE": 91.69259456456835,
+      "R\u00b2": -1.1332996849651114
     }
   ],
-  "created_at": "2026-01-29T02:48:44.463093",
+  "created_at": "2026-01-30T02:48:49.261637",
   "tensorflow_version": "2.20.0"
 }
